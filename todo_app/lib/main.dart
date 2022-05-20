@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-// import 'package:todo_app/ToDoApp.dart';
-import 'package:todo_app/a.dart';
-import 'package:todo_app/abc.dart';
+import 'package:todo_app/ToDoApp.dart';
 
 import 'ToDoApp.dart';
 
@@ -14,12 +12,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home:
-            //  A()
-            ToDoApp()
-        // ABC()
-        );
+    return MaterialApp(debugShowCheckedModeBanner: false, home: ToDoApp());
   }
 }

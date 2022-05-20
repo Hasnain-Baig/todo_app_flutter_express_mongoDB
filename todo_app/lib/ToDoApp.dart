@@ -1,8 +1,5 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:todo_app/models/todoModel.dart';
 
 class ToDoApp extends StatefulWidget {
   @override
@@ -19,21 +16,14 @@ class _ToDoAppState extends State<ToDoApp> {
   Map loadObj = {"isLoading": false, "action": ""};
 
   void initState() {
-    // Timer.periodic(Duration(seconds: 1), (timer) {
     todoArr = getTodoArr();
-    // });
     super.initState();
   }
 
   Future<List> getTodoArr() async {
     var dio = Dio();
     String url = "https://todo-app-apis.herokuapp.com/apis/todos";
-    // String url = "https://fakestoreapi.com/products/category/jewelery";
     final response = await dio.get(url);
-    print("Response===================>${response.statusCode}");
-    print("===================>${response.data}");
-    // TodoModel todoModel = TodoModel.fromJSON(response.data);
-    // lst = response.data;
     return response.data;
   }
 
@@ -44,7 +34,6 @@ class _ToDoAppState extends State<ToDoApp> {
     });
     Navigator.of(context)
         .pop(); //for after clicking move to  homescreen immediately
-    // await Future.delayed(const Duration(seconds: 5));
     if (item != "") {
       var dio = Dio();
       String url = "https://todo-app-apis.herokuapp.com/apis/todos";
@@ -57,10 +46,8 @@ class _ToDoAppState extends State<ToDoApp> {
         loadObj['action'] = "";
       });
 
-      print("===================>${response.data}");
-      lst.add(response.data);
-      // print("after last============>$response");
-      // return response.data;
+      // print("===================>${response.data}");
+      // lst.add(response.data);
     } else {
       emptyInputDialogBox();
       // addItemDialogBox();
@@ -86,7 +73,7 @@ class _ToDoAppState extends State<ToDoApp> {
         loadObj['isLoading'] = false;
         loadObj['action'] = "";
       });
-      print("===================>${response.data}");
+      // print("===================>${response.data}");
       // print("last============>$lst");
       // lst.replaceRange(index, index + 1, {item});
       return response.data;
@@ -115,8 +102,6 @@ class _ToDoAppState extends State<ToDoApp> {
       loadObj['action'] = "";
     });
     print("===================>${response.data}");
-    // lst.removeAt(index);
-    // initState();
     setState(() {});
     // return response.data;
   }
@@ -288,9 +273,6 @@ class _ToDoAppState extends State<ToDoApp> {
                       future: todoArr,
                       builder: (context, snapshot) {
                         if (snapshot.hasData) {
-                          // return CircularProgressIndicator();
-                          print(
-                              "b l==================>${snapshot.data!.length}");
                           return snapshot.data!.length != 0
                               ? ListView.builder(
                                   scrollDirection: Axis.vertical,
@@ -306,9 +288,7 @@ class _ToDoAppState extends State<ToDoApp> {
                                                 width: 3.0,
                                                 color: Colors.white),
                                           )),
-                                      // margin: EdgeInsets.only(top:5),
                                       child: ListTile(
-                                        // tileColor: Colors.orange[50],
                                         title: Text(
                                           "${snapshot.data![index]['item']}",
                                           style: TextStyle(color: Colors.black),
