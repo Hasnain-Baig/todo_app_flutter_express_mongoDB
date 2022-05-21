@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:todo_app/components/errorDialogBox.dart';
 
 class ToDoApp extends StatefulWidget {
   @override
@@ -21,51 +22,115 @@ class _ToDoAppState extends State<ToDoApp> {
   }
 
   Future<List> getTodoArr() async {
-    var dio = Dio();
-    String url = "https://todo-app-apis.herokuapp.com/apis/todos";
-    final response = await dio.get(url);
-    return response.data;
+    try {
+      var dio = Dio();
+      String url = "https://todo-app-apis.herokuapp.com/apis/todos";
+      final response = await dio.get(url);
+      return response.data;
+    } catch (e) {
+      showDialog(
+          context: context,
+          builder: (context) {
+            return ErrorDialogBox(dataError: "No Internet Connection");
+          });
+      return [];
+    }
   }
 
   addItem(var item) async {
-    setState(() {
-      loadObj['isLoading'] = true;
-      loadObj['action'] = "adding";
-    });
-    Navigator.of(context)
-        .pop(); //for after clicking move to  homescreen immediately
-    if (item != "") {
-      var dio = Dio();
-      String url = "https://todo-app-apis.herokuapp.com/apis/todos";
-      final response = await dio.post(url, data: {"item": item});
-      setState(() {
-        todoArr = getTodoArr();
-      });
+    //for after clicking move to  homescreen immediately
+    try {
+      if (item != "") {
+        setState(() {
+          loadObj['isLoading'] = true;
+          loadObj['action'] = "adding";
+        });
+        Navigator.of(context).pop();
+        var dio = Dio();
+        String url = "https://todo-app-apis.herokuapp.com/apis/todos";
+        final response = await dio.post(url, data: {"item": item});
+        print(response.statusCode == 200);
+        setState(() {
+          todoArr = getTodoArr();
+        });
+        setState(() {
+          loadObj['isLoading'] = false;
+          loadObj['action'] = "";
+        });
+
+        // print("===================>${response.data}");
+        // lst.add(response.data);
+      } else {
+        emptyInputDialogBox();
+      }
+    } catch (e) {
+      print("erro");
       setState(() {
         loadObj['isLoading'] = false;
         loadObj['action'] = "";
       });
-
-      // print("===================>${response.data}");
-      // lst.add(response.data);
-    } else {
-      emptyInputDialogBox();
-      // addItemDialogBox();
+      showDialog(
+          context: context,
+          builder: (context) {
+            return ErrorDialogBox(dataError: "No Internet Connection");
+          });
     }
+
     setState(() {});
   }
 
   editItem(var id, var item) async {
-    setState(() {
-      loadObj['isLoading'] = true;
-      loadObj['action'] = "updating";
-    });
-    Navigator.of(context)
-        .pop(); //for after clicking move to  homescreen immediately
-    if (item != "") {
+    try {
+      if (item != "") {
+        setState(() {
+          loadObj['isLoading'] = true;
+          loadObj['action'] = "updating";
+        });
+        Navigator.of(context).pop();
+        var dio = Dio();
+        String url = "https://todo-app-apis.herokuapp.com/apis/todos/$id";
+        final response = await dio.put(url, data: {"item": item});
+        setState(() {
+          todoArr = getTodoArr();
+        });
+        setState(() {
+          loadObj['isLoading'] = false;
+          loadObj['action'] = "";
+        });
+        // print("===================>${response.data}");
+        // print("last============>$lst");
+        // lst.replaceRange(index, index + 1, {item});
+        return response.data;
+      } else {
+        emptyInputDialogBox();
+        // editItemDialogBox(index);
+      }
+    } catch (e) {
+      setState(() {
+        loadObj['isLoading'] = false;
+        loadObj['action'] = "";
+      });
+      showDialog(
+          context: context,
+          builder: (context) {
+            return ErrorDialogBox(dataError: e);
+          });
+    }
+    //for after clicking move to  homescreen immediately
+
+    setState(() {});
+  }
+
+  deleteItem(var id) async {
+    try {
+      setState(() {
+        loadObj['isLoading'] = true;
+        loadObj['action'] = "deleting";
+      });
+
       var dio = Dio();
       String url = "https://todo-app-apis.herokuapp.com/apis/todos/$id";
-      final response = await dio.put(url, data: {"item": item});
+      final response = await dio.delete(url);
       setState(() {
         todoArr = getTodoArr();
       });
@@ -73,35 +138,17 @@ class _ToDoAppState extends State<ToDoApp> {
         loadObj['isLoading'] = false;
         loadObj['action'] = "";
       });
-      // print("===================>${response.data}");
-      // print("last============>$lst");
-      // lst.replaceRange(index, index + 1, {item});
-      return response.data;
-    } else {
-      emptyInputDialogBox();
-      // editItemDialogBox(index);
+    } catch (e) {
+      setState(() {
+        loadObj['isLoading'] = false;
+        loadObj['action'] = "";
+      });
+      showDialog(
+          context: context,
+          builder: (context) {
+            return ErrorDialogBox(dataError: "No Internet Connection");
+          });
     }
-    setState(() {});
-  }
-
-  deleteItem(var id) async {
-    print(id);
-    setState(() {
-      loadObj['isLoading'] = true;
-      loadObj['action'] = "deleting";
-    });
-
-    var dio = Dio();
-    String url = "https://todo-app-apis.herokuapp.com/apis/todos/$id";
-    final response = await dio.delete(url);
-    setState(() {
-      todoArr = getTodoArr();
-    });
-    setState(() {
-      loadObj['isLoading'] = false;
-      loadObj['action'] = "";
-    });
-    print("===================>${response.data}");
     setState(() {});
     // return response.data;
   }
