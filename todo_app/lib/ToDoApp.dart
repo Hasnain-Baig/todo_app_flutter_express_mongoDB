@@ -8,24 +8,30 @@ class ToDoApp extends StatefulWidget {
 }
 
 class _ToDoAppState extends State<ToDoApp> {
-  List lst = [];
+  // List lst = [];
   var item = "";
   TextEditingController editText = TextEditingController();
 
   late Future<List> todoArr = [] as Future<List>;
 
   Map loadObj = {"isLoading": false, "action": ""};
+  var isInternetConnected = false;
 
+// initSTATE
   void initState() {
     todoArr = getTodoArr();
     super.initState();
   }
 
+  // fetching data
   Future<List> getTodoArr() async {
     try {
       var dio = Dio();
       String url = "https://todo-app-apis.herokuapp.com/apis/todos";
       final response = await dio.get(url);
+      setState(() {
+        isInternetConnected = true;
+      });
       return response.data;
     } catch (e) {
       showDialog(
@@ -33,23 +39,26 @@ class _ToDoAppState extends State<ToDoApp> {
           builder: (context) {
             return ErrorDialogBox(dataError: "No Internet Connection");
           });
+      setState(() {
+        isInternetConnected = false;
+      });
       return [];
     }
   }
 
+// posting todo
   addItem(var item) async {
     //for after clicking move to  homescreen immediately
     try {
+      Navigator.of(context).pop();
       if (item != "") {
         setState(() {
           loadObj['isLoading'] = true;
           loadObj['action'] = "adding";
         });
-        Navigator.of(context).pop();
         var dio = Dio();
         String url = "https://todo-app-apis.herokuapp.com/apis/todos";
         final response = await dio.post(url, data: {"item": item});
-        print(response.statusCode == 200);
         setState(() {
           todoArr = getTodoArr();
         });
@@ -57,14 +66,10 @@ class _ToDoAppState extends State<ToDoApp> {
           loadObj['isLoading'] = false;
           loadObj['action'] = "";
         });
-
-        // print("===================>${response.data}");
-        // lst.add(response.data);
       } else {
         emptyInputDialogBox();
       }
     } catch (e) {
-      print("erro");
       setState(() {
         loadObj['isLoading'] = false;
         loadObj['action'] = "";
@@ -79,14 +84,15 @@ class _ToDoAppState extends State<ToDoApp> {
     setState(() {});
   }
 
+// put todo
   editItem(var id, var item) async {
     try {
+      Navigator.of(context).pop();
       if (item != "") {
         setState(() {
           loadObj['isLoading'] = true;
           loadObj['action'] = "updating";
         });
-        Navigator.of(context).pop();
         var dio = Dio();
         String url = "https://todo-app-apis.herokuapp.com/apis/todos/$id";
         final response = await dio.put(url, data: {"item": item});
@@ -97,13 +103,9 @@ class _ToDoAppState extends State<ToDoApp> {
           loadObj['isLoading'] = false;
           loadObj['action'] = "";
         });
-        // print("===================>${response.data}");
-        // print("last============>$lst");
-        // lst.replaceRange(index, index + 1, {item});
         return response.data;
       } else {
         emptyInputDialogBox();
-        // editItemDialogBox(index);
       }
     } catch (e) {
       setState(() {
@@ -113,14 +115,14 @@ class _ToDoAppState extends State<ToDoApp> {
       showDialog(
           context: context,
           builder: (context) {
-            return ErrorDialogBox(dataError: e);
+            return ErrorDialogBox(dataError: "No Internet Connection");
           });
     }
-    //for after clicking move to  homescreen immediately
 
     setState(() {});
   }
 
+// todo delete
   deleteItem(var id) async {
     try {
       setState(() {
@@ -150,7 +152,6 @@ class _ToDoAppState extends State<ToDoApp> {
           });
     }
     setState(() {});
-    // return response.data;
   }
 
   addItemDialogBox() {
@@ -376,11 +377,18 @@ class _ToDoAppState extends State<ToDoApp> {
                                     );
                                   },
                                 )
-                              : Center(
-                                  child: Container(
-                                      padding:
-                                          EdgeInsets.symmetric(vertical: 10),
-                                      child: Text("No Data Found")));
+                              : isInternetConnected == true
+                                  ? Center(
+                                      child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 10),
+                                          child: Text("No Data Found")))
+                                  : Center(
+                                      child: Container(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 10),
+                                          child: Text(
+                                              "Internet Connection Error")));
                         } else {
                           return Center(
                               child: Container(
