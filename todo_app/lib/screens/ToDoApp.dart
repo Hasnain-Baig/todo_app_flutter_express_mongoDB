@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:todo_app/components/errorDialogBox.dart';
@@ -7,8 +9,7 @@ class ToDoApp extends StatefulWidget {
   _ToDoAppState createState() => _ToDoAppState();
 }
 
-class _ToDoAppState extends State<ToDoApp> {
-  // List lst = [];
+class _ToDoAppState extends State<ToDoApp> with WidgetsBindingObserver {
   var item = "";
   TextEditingController editText = TextEditingController();
 
@@ -20,7 +21,48 @@ class _ToDoAppState extends State<ToDoApp> {
 // initSTATE
   void initState() {
     todoArr = getTodoArr();
+    WidgetsBinding.instance.addObserver(this);
     super.initState();
+  }
+
+  checkConnection() async {
+    try {
+      final result = await InternetAddress.lookup('google.com');
+      if (result.isNotEmpty && result[0].rawAddress.isNotEmpty) {
+        setState(() {
+          isInternetConnected = true;
+        });
+      }
+    } on SocketException catch (_) {
+      setState(() {
+        isInternetConnected = false;
+      });
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // TODO: implement didChangeAppLifecycleState
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.paused) {
+      // print("paused----$isInternetConnected");
+    }
+    if (state == AppLifecycleState.resumed) {
+      // print("resumed----$isInternetConnected");
+      checkConnection();
+    }
+    if (state == AppLifecycleState.inactive) {
+      // print("inact");
+    }
+    if (state == AppLifecycleState.detached) {
+      // print("detached");
+    }
+  }
+
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   // fetching data
@@ -29,9 +71,7 @@ class _ToDoAppState extends State<ToDoApp> {
       var dio = Dio();
       String url = "https://todo-app-apis.herokuapp.com/apis/todos";
       final response = await dio.get(url);
-      setState(() {
-        isInternetConnected = true;
-      });
+      // print("Try response----------->${response.data}");
       return response.data;
     } catch (e) {
       showDialog(
@@ -39,9 +79,7 @@ class _ToDoAppState extends State<ToDoApp> {
           builder: (context) {
             return ErrorDialogBox(dataError: "No Internet Connection");
           });
-      setState(() {
-        isInternetConnected = false;
-      });
+      // print("Error----------->$e");
       return [];
     }
   }
@@ -310,106 +348,132 @@ class _ToDoAppState extends State<ToDoApp> {
       appBar: AppBar(
         title: Text("To Do App"),
         backgroundColor: Colors.orange,
-      ),
-      body: loadObj['isLoading']
-          ? loadingDialog()
-          : SingleChildScrollView(
-              physics: ScrollPhysics(),
-              child: Column(
-                children: [
-                  FutureBuilder<List>(
-                      future: todoArr,
-                      builder: (context, snapshot) {
-                        if (snapshot.hasData) {
-                          return snapshot.data!.length != 0
-                              ? ListView.builder(
-                                  scrollDirection: Axis.vertical,
-                                  shrinkWrap: true,
-                                  itemCount: snapshot.data!.length,
-                                  itemBuilder: (context, index) {
-                                    return Container(
-                                      decoration: BoxDecoration(
-                                          color: Color.fromARGB(
-                                              255, 250, 245, 238),
-                                          border: Border(
-                                            bottom: BorderSide(
-                                                width: 3.0,
-                                                color: Colors.white),
-                                          )),
-                                      child: ListTile(
-                                        title: Text(
-                                          "${snapshot.data![index]['item']}",
-                                          style: TextStyle(color: Colors.black),
-                                        ),
-                                        trailing: Container(
-                                          width: 50,
-                                          child: Row(
-                                            children: [
-                                              GestureDetector(
-                                                  onTap: () => {
-                                                        editItemDialogBox(
-                                                          snapshot.data![index]
-                                                              ['_id'],
-                                                          snapshot.data![index]
-                                                              ['item'],
-                                                        ),
-                                                      },
-                                                  child: Icon(
-                                                    Icons.edit,
-                                                    color: Color.fromARGB(
-                                                        255, 243, 158, 31),
-                                                  )),
-                                              GestureDetector(
-                                                  onTap: () => {
-                                                        deleteItem(snapshot
-                                                                .data![index]
-                                                            ['_id'])
-                                                      },
-                                                  child: Icon(
-                                                    Icons.delete,
-                                                    color: Color.fromARGB(
-                                                        255, 243, 158, 31),
-                                                  )),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                )
-                              : isInternetConnected == true
-                                  ? Center(
-                                      child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 10),
-                                          child: Text("No Data Found")))
-                                  : Center(
-                                      child: Container(
-                                          padding: EdgeInsets.symmetric(
-                                              vertical: 10),
-                                          child: Text(
-                                              "Internet Connection Error")));
-                        } else {
-                          return Center(
-                              child: Container(
-                                  padding: EdgeInsets.symmetric(vertical: 10),
-                                  child: CircularProgressIndicator(
-                                    color: Color.fromARGB(255, 243, 158, 31),
-                                  )));
-                        }
-                        return Center(
-                            child:
-                                Container(child: CircularProgressIndicator()));
-                      }),
-
-                  // ),
-                ],
+        actions: [
+          GestureDetector(
+              child: Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Icon(
+                  Icons.refresh,
+                  size: 30,
+                  color: Colors.white,
+                ),
               ),
-            ),
+              onTap: () {
+                checkConnection();
+                todoArr = getTodoArr();
+              })
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: ScrollPhysics(),
+          child: Column(children: [
+            FutureBuilder<List>(
+                future: todoArr,
+                builder: (context, snapshot) {
+                  switch (snapshot.connectionState) {
+                    case ConnectionState.waiting:
+                      return Center(
+                          child: Container(
+                              padding: EdgeInsets.symmetric(vertical: 10),
+                              child: CircularProgressIndicator(
+                                color: Color.fromARGB(255, 243, 158, 31),
+                              )));
+                    case ConnectionState.done:
+                      if (snapshot.hasData) {
+                        return isInternetConnected == false
+                            ? Center(
+                                child: Container(
+                                    padding: EdgeInsets.symmetric(vertical: 10),
+                                    child: Text("Internet Connection Error")))
+                            : loadObj['isLoading'] == true
+                                ? loadingDialog()
+                                : snapshot.data!.length == 0
+                                    ? Center(
+                                        child: Container(
+                                            padding: EdgeInsets.symmetric(
+                                                vertical: 10),
+                                            child: Text("No Item Found")))
+                                    : ListView.builder(
+                                        scrollDirection: Axis.vertical,
+                                        shrinkWrap: true,
+                                        itemCount: snapshot.data!.length,
+                                        itemBuilder: (context, index) {
+                                          var itemVal =
+                                              snapshot.data![index]['item'];
+                                          var itemId =
+                                              snapshot.data![index]['_id'];
+
+                                          return Container(
+                                            decoration: BoxDecoration(
+                                                color: Color.fromARGB(
+                                                    255, 250, 245, 238),
+                                                border: Border(
+                                                  bottom: BorderSide(
+                                                      width: 3.0,
+                                                      color: Colors.white),
+                                                )),
+                                            child: ListTile(
+                                              title: Text(
+                                                "$itemVal",
+                                                style: TextStyle(
+                                                    color: Colors.black),
+                                              ),
+                                              trailing: Container(
+                                                width: 50,
+                                                child: Row(
+                                                  children: [
+                                                    GestureDetector(
+                                                        onTap: () => {
+                                                              editItemDialogBox(
+                                                                itemId,
+                                                                itemVal,
+                                                              ),
+                                                            },
+                                                        child: Icon(
+                                                          Icons.edit,
+                                                          color: Color.fromARGB(
+                                                              255,
+                                                              243,
+                                                              158,
+                                                              31),
+                                                        )),
+                                                    GestureDetector(
+                                                        onTap: () => {
+                                                              deleteItem(itemId)
+                                                            },
+                                                        child: Icon(
+                                                          Icons.delete,
+                                                          color: Color.fromARGB(
+                                                              255,
+                                                              243,
+                                                              158,
+                                                              31),
+                                                        )),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      );
+                      }
+                  }
+                  return Center(
+                      child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          child: CircularProgressIndicator(
+                            color: Color.fromARGB(255, 243, 158, 31),
+                          )));
+                }),
+
+            // ),
+          ]),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
           backgroundColor: Colors.orange,
-          onPressed: () =>
-              {loadObj['isLoading'] ? loadingDialog() : addItemDialogBox()},
+          onPressed: () => addItemDialogBox(),
           child: Icon(Icons.add)),
     );
   }
